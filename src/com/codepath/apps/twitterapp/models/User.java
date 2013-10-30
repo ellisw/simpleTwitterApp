@@ -14,9 +14,14 @@ public class User extends Model{
 	private int numTweets;
 	private int followersCount;
 	private int friendCount;
+	private String tagline;
 	
 	public User(){
 		
+	}
+	
+	public String getTagline(){
+		return tagline;
 	}
 	
 	public long getUserId() {
@@ -50,6 +55,7 @@ public class User extends Model{
 	public String toString(){
 		return screenName;
 	}
+	
 
 	public static User fromJson(JSONObject json){
 		User u = new User();
@@ -61,6 +67,7 @@ public class User extends Model{
 			u.followersCount = json.getInt("followers_count");
 			u.friendCount = json.getInt("friends_count");
 			u.numTweets = json.getInt("statuses_count");
+			u.tagline = json.getString("description");
 		} catch (JSONException e) {
 			e.printStackTrace();
 			return null;

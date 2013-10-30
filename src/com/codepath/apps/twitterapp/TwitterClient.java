@@ -53,9 +53,51 @@ public class TwitterClient extends OAuthBaseClient {
     	client.get(url, null, handler);
 	}
     
+    public void getMentions(AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/mentions_timeline.json?count=5");
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getOlderMentions(long maxId, AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/mentions_timeline.json?count=1&max_id=" + (maxId-1));
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getNewerMentions(long since_id, AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/mentions_timeline.json?count=5&since_id="+since_id);
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
     public void getVerifyCredentials(AsyncHttpResponseHandler handler) {
     	String url = getApiUrl("account/verify_credentials.json");
     	Log.v("USERNAME", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getUserTimeline(AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/user_timeline.json?count=5");
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getOlderUserTimeline(long maxId, AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/user_timeline.json?count=1&max_id=" + (maxId-1));
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getNewerUserTimeline(long since_id, AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("statuses/user_timeline.json?count=5&since_id="+since_id);
+    	Log.v("DEBUG", url);
+    	client.get(url, null, handler);
+	}
+    
+    public void getUsers(String userName, AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("users/show.json?screen_name="+userName);
+    	Log.v("DEBUG", url);
     	client.get(url, null, handler);
 	}
     

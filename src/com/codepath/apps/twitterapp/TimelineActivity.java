@@ -1,57 +1,51 @@
 package com.codepath.apps.twitterapp;
 
-import java.util.ArrayList;
 import java.util.Date;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import android.app.Activity;
+import android.app.ActionBar;
+import android.app.ActionBar.Tab;
+import android.app.ActionBar.TabListener;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.codepath.apps.twitterapp.fragments.HomeTimelineFragment;
+import com.codepath.apps.twitterapp.fragments.MentionsFragment;
+import com.codepath.apps.twitterapp.fragments.TweetsListFragment.OnUserSelectedListener;
 import com.codepath.apps.twitterapp.models.Tweet;
 import com.codepath.apps.twitterapp.models.User;
 import com.loopj.android.http.JsonHttpResponseHandler;
 
-import eu.erikw.PullToRefreshListView;
-import eu.erikw.PullToRefreshListView.OnRefreshListener;
-
-public class TimelineActivity extends Activity {
+public class TimelineActivity extends FragmentActivity implements TabListener, OnUserSelectedListener{
 
 	private static final int REQUEST_CODE = 1;
-	private TweetAdapter tweetAdapter;
-	private ArrayList<Tweet> tweets;
-	private PullToRefreshListView lvTweets;
 	private User sessionUser;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_timeline);
-
-		lvTweets = (PullToRefreshListView) findViewById(R.id.lvTweets);
-		tweets = new ArrayList<Tweet>();
-		tweetAdapter = new TweetAdapter(getBaseContext(), tweets);
-		lvTweets.setOnScrollListener(new EndlessScrollListener() {
-			@Override
-			public void onLoadMore(int page, int totalItemsCount) {
-				fetchOlderTweets();
-			}
-		});
-
-		lvTweets.setOnRefreshListener(new OnRefreshListener() {
-			@Override
-			public void onRefresh() {
-				fetchNewerTweets();
-			}
-		});
-
+		
+		setupNavigationTabs();
 		setupUser();
-		fetchTweets();
+	}
+
+	private void setupNavigationTabs() {
+		ActionBar actionBar = getActionBar();
+		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		actionBar.setDisplayShowTitleEnabled(true);
+		Tab tabHome = actionBar.newTab().setText("Home").setTag("HomeTimelineFragment").setTabListener(this);
+		Tab tabMentions = actionBar.newTab().setText("Mentions").setTag("MentionsFragment").setTabListener(this);
+		actionBar.addTab(tabHome);
+		actionBar.addTab(tabMentions);
+		actionBar.selectTab(tabHome);
 	}
 
 	private void setupUser() {
@@ -69,87 +63,6 @@ public class TimelineActivity extends Activity {
 
 						Log.d("USERNAME", sessionUser.getScreenName());
 						Log.d("USER", sessionUser.toString());
-					}
-				});
-	}
-
-	private void fetchOlderTweets() {
-		Log.v("DEBUG", Long.valueOf(tweets.get(tweets.size() - 1).getTweetId())
-				.toString());
-		TwitterApp.getRestClient().getOlderHomeTimeline(
-				tweets.get(tweets.size() - 1).getTweetId(),
-				new JsonHttpResponseHandler() {
-					@Override
-					public void onFailure(Throwable arg0, String arg1) {
-						super.onFailure(arg0, arg1);
-					}
-
-					@Override
-					public void onSuccess(JSONArray jsonTweets) {
-						Log.d("DEBUG", jsonTweets.toString());
-						ArrayList<Tweet> oldTweets = Tweet.fromJson(jsonTweets);
-
-						tweets.addAll(tweets.size(), oldTweets);
-						Log.d("DEBUG", tweets.toString());
-						tweetAdapter.notifyDataSetChanged();
-
-						super.onSuccess(jsonTweets);
-					}
-				});
-	}
-
-	private void fetchNewerTweets() {
-		long firstTweetId = tweets.get(0).getTweetId();
-		// The first element of the array could be a fake tweet inserted
-		// in this app, which will have an id of 0. We want to get the first
-		// real tweet id, so we can pass it in to the call to get new tweets
-		// since the real tweet id
-		while(firstTweetId == 0){
-			tweets.remove(0);
-			firstTweetId = tweets.get(0).getTweetId();
-		}
-		TwitterApp.getRestClient().getNewerHomeTimeline(firstTweetId,
-				new JsonHttpResponseHandler() {
-					@Override
-					public void onFailure(Throwable arg0, String arg1) {
-						Log.d("DEBUG", arg1.toString());
-						super.onFailure(arg0, arg1);
-					}
-
-					@Override
-					public void onSuccess(JSONArray jsonTweets) {
-						Log.d("DEBUG", jsonTweets.toString());
-						ArrayList<Tweet> newTweets = Tweet.fromJson(jsonTweets);
-
-						tweets.addAll(0, newTweets);
-						Log.d("DEBUG", tweets.toString());
-						tweetAdapter.notifyDataSetChanged();
-
-						super.onSuccess(jsonTweets);
-						lvTweets.onRefreshComplete();
-					}
-				});
-	}
-
-	private void fetchTweets() {
-		TwitterApp.getRestClient().getHomeTimeline(
-				new JsonHttpResponseHandler() {
-					@Override
-					public void onFailure(Throwable arg0, String arg1) {
-						Log.d("DEBUG", arg1.toString());
-						super.onFailure(arg0, arg1);
-					}
-
-					@Override
-					public void onSuccess(JSONArray jsonTweets) {
-						ArrayList<Tweet> newTweets = Tweet.fromJson(jsonTweets);
-						tweetAdapter.clear();
-						tweetAdapter.addAll(newTweets);
-						Log.d("DEBUG", tweets.toString());
-
-						lvTweets.setAdapter(tweetAdapter);
-
-						super.onSuccess(jsonTweets);
 					}
 				});
 	}
@@ -173,14 +86,53 @@ public class TimelineActivity extends Activity {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
 			if (data.hasExtra("body")) {
+				HomeTimelineFragment frag = new HomeTimelineFragment();
+				FragmentManager manager = getSupportFragmentManager();
+				android.support.v4.app.FragmentTransaction fts = manager
+						.beginTransaction();
+				fts.replace(R.id.frame_container, frag);
+				fts.commit();
+
 				Tweet t = new Tweet();
 				t.setTweetId(0);
 				t.setText(data.getStringExtra("body"));
 				t.setUser(sessionUser);
 				t.setCreatedAt(new Date());
-				tweets.add(0, t);
-				tweetAdapter.notifyDataSetChanged();
+				frag.getAdapter().insert(t, 0);
 			}
 		}
+	}
+
+	@Override
+	public void onTabReselected(Tab tab, FragmentTransaction ft) {
+	}
+
+	@Override
+	public void onTabSelected(Tab tab, FragmentTransaction ft) {
+		FragmentManager manager = getSupportFragmentManager();
+		android.support.v4.app.FragmentTransaction fts = manager
+				.beginTransaction();
+		if (tab.getTag().equals("HomeTimelineFragment")) {
+			fts.replace(R.id.frame_container, new HomeTimelineFragment());
+		} else if (tab.getTag().equals("MentionsFragment")) {
+			fts.replace(R.id.frame_container, new MentionsFragment());
+		}
+		fts.commit();
+	}
+
+	@Override
+	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+	}
+	
+	public void onProfileView(MenuItem mi) {
+		Intent i = new Intent(this, ProfileActivity.class);
+		startActivity(i);
+	}
+
+	@Override
+	public void onUserSelected(String userName) {
+		Intent i = new Intent(this, ProfileActivity.class);
+		i.putExtra("username", userName);
+		startActivity(i);		
 	}
 }

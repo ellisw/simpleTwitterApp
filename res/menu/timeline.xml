@@ -9,5 +9,10 @@
         android:id="@+id/actionCompose"
         android:icon="@drawable/ic_action_edit"
         android:showAsAction="always"/>
+    <item
+        android:id="@+id/profile"
+        android:icon="@drawable/ic_profile"
+        android:onClick="onProfileView"
+        android:showAsAction="always"/>
 
 </menu>
